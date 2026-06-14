@@ -163,6 +163,27 @@ GET /api/v1/chat/history/{session_id}
 
 ---
 
+## Frontend
+
+A React frontend is available in the `frontend/` directory.
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Open `http://localhost:5173`
+
+Features:
+- Chat interface with suggested questions
+- Typing indicator while AI is thinking
+- Source cards linking to official government pages
+- Checklist generator with structured step-by-step plans
+- Personalise answers with your nationality and visa status
+
+---
+
 ## Knowledge base
 
 The system is grounded in 16 official Irish government pages across these sources:
