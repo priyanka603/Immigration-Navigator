@@ -13,6 +13,7 @@ import json
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_groq import ChatGroq
 
+from pydantic import SecretStr
 from app.core.config import get_settings
 from app.core.logging import get_logger
 from app.graph.state import NavigatorState
@@ -65,7 +66,9 @@ class ChecklistAgent:
     def __init__(self) -> None:
         self.llm = ChatGroq(
             model=settings.groq_model,
-            api_key=settings.groq_key,
+            api_key=(settings.groq_key
+                     if isinstance(settings.groq_key, SecretStr)
+                     else SecretStr(settings.groq_key)),
             temperature=0.1,
         )
         self.chain = CHECKLIST_PROMPT | self.llm
@@ -82,7 +85,7 @@ class ChecklistAgent:
             nationality=nationality,
         )
 
-        chunks = retriever.search(goal, top_k=6)
+        chunks = await retriever.search_async(goal, top_k=6)
 
         if not chunks:
             state.answer = (
@@ -107,7 +110,22 @@ class ChecklistAgent:
                 "current_status": current_status,
             })
 
-            raw = response.content.strip()
+            # response.content can be a string or a list of strings/dicts depending on the LLM wrapper
+            content = response.content
+            if isinstance(content, list):
+                parts = []
+                for item in content:
+                    if isinstance(item, str):
+                        parts.append(item)
+                    elif isinstance(item, dict):
+                        # try common keys
+                        parts.append(item.get("content") or item.get("text") or json.dumps(item))
+                    else:
+                        parts.append(str(item))
+                raw = "\n".join(parts).strip()
+            else:
+                raw = str(content).strip()
+
             if raw.startswith("```"):
                 raw = raw.split("```")[1]
                 if raw.startswith("json"):

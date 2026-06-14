@@ -110,6 +110,14 @@ IMMIGRATION_SOURCES = [
         "category": "changes",
     },
 ]
+LIVE_FETCH_SOURCES = [
+    {
+        "url": "https://enterprise.gov.ie/en/what-we-do/workplace-and-skills/employment-permits/current-application-processing-dates/",
+        "title": "Current processing dates",
+        "category": "processing_times",
+        "keywords": ["processing", "processing time", "how long", "waiting time", "weeks"],
+    },
+]
 
 CATEGORIES = [
     "visas",

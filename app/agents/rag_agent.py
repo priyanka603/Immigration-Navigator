@@ -3,6 +3,7 @@ RAG Agent — answers immigration questions grounded in official sources.
 """
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_groq import ChatGroq
+from pydantic import SecretStr
 
 from app.core.config import get_settings
 from app.core.logging import get_logger
@@ -42,7 +43,7 @@ class RAGAgent:
     def __init__(self) -> None:
         self.llm = ChatGroq(
             model=settings.groq_model,
-            api_key=settings.groq_key,
+            api_key=SecretStr(settings.groq_key) if settings.groq_key is not None else None,
             temperature=0.1,
         )
         self.chain = RAG_PROMPT | self.llm
@@ -60,7 +61,7 @@ class RAGAgent:
         log = logger.bind(question=question[:80])
         log.info("rag_agent_called")
 
-        chunks = retriever.search(question, top_k=top_k)
+        chunks = await retriever.search_async(question, top_k=top_k)
 
         if not chunks:
             log.warning("no_context_found")
