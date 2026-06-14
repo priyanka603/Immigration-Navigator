@@ -1,7 +1,7 @@
 export default function TypingIndicator() {
   return (
     <div className="fade-in flex justify-start">
-      <div className="bg-white border border-border rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm">
+      <div className="bg-surface border border-border rounded-2xl rounded-tl-sm px-4 py-3">
         <div className="flex items-center gap-1.5">
           <span className="text-sm">🍀</span>
           <div className="flex gap-1 ml-1">

@@ -1,7 +1,7 @@
 import json
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status  # type: ignore[import]
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -130,16 +130,16 @@ async def generate_checklist(
 
     raw_steps = result.get("checklist_steps", [])
     steps = [
-        ChecklistStep(
-            step_number=s.get("step_number", i + 1),
-            title=s.get("title", ""),
-            description=s.get("description", ""),
-            documents_required=s.get("documents_required", []),
-            estimated_time=s.get("estimated_time"),
-            fee=s.get("fee"),
-            official_link=s.get("official_link"),
-        )
-        for i, s in enumerate(raw_steps)
+    ChecklistStep(
+        step_number=s.get("step_number", i + 1),
+        title=s.get("title", ""),
+        description=s.get("description", ""),
+        documents_required=s.get("documents_required") or [],
+        estimated_time=s.get("estimated_time"),
+        fee=s.get("fee"),
+        official_link=s.get("official_link"),
+    )
+    for i, s in enumerate(raw_steps)
     ]
 
     raw_sources = result.get("sources", [])

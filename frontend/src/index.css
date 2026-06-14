@@ -1,12 +1,12 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
-@import "tailwindcss/base";
-@import "tailwindcss/components";
-@import "tailwindcss/utilities";
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
 
 body {
-  background-color: #F8F6F1;
-  color: #1A1A2E;
+  background-color: #0F1117;
+  color: #F1F5F9;
   font-family: 'Inter', system-ui, sans-serif;
 }
 
@@ -17,7 +17,7 @@ body {
   background: transparent;
 }
 .chat-scrollbar::-webkit-scrollbar-thumb {
-  background: #E5E1D8;
+  background: #2D3148;
   border-radius: 2px;
 }
 
