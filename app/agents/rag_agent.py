@@ -1,20 +1,12 @@
 """
 RAG Agent — answers immigration questions grounded in official sources.
-
-Flow:
-  1. Retrieve relevant chunks from FAISS
-  2. Build a prompt with the chunks as context
-  3. Call Groq to generate a grounded answer
-  4. Return answer with source citations
-
-The agent never answers from training data alone.
-If the retriever finds nothing relevant, it says so.
 """
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_groq import ChatGroq
 
 from app.core.config import get_settings
 from app.core.logging import get_logger
+from app.graph.state import NavigatorState
 from app.rag.retriever import retriever
 
 logger = get_logger(__name__)
@@ -55,19 +47,19 @@ class RAGAgent:
         )
         self.chain = RAG_PROMPT | self.llm
 
-    async def answer(self, question: str, top_k: int = 5) -> dict:
-        """
-        Answer an immigration question grounded in official sources.
+    async def answer_from_state(self, state: NavigatorState) -> NavigatorState:
+        """Called by LangGraph — reads question from state, writes answer to state."""
+        result = await self.answer(state.question)
+        state.answer = result["answer"]
+        state.sources = result["sources"]
+        state.retrieved_chunks = result.get("chunks", [])
+        return state
 
-        Returns:
-            answer: the response text
-            sources: list of source documents used
-            has_context: whether relevant context was found
-        """
+    async def answer(self, question: str, top_k: int = 5) -> dict:
+        """Direct call — used for testing outside the graph."""
         log = logger.bind(question=question[:80])
         log.info("rag_agent_called")
 
-        # Step 1 — Retrieve relevant chunks
         chunks = retriever.search(question, top_k=top_k)
 
         if not chunks:
@@ -81,9 +73,9 @@ class RAGAgent:
                 ),
                 "sources": [],
                 "has_context": False,
+                "chunks": [],
             }
 
-        # Step 2 — Build context string with source attribution
         context_parts = []
         for i, chunk in enumerate(chunks, 1):
             context_parts.append(
@@ -93,15 +85,13 @@ class RAGAgent:
             )
         context = "\n\n---\n\n".join(context_parts)
 
-        # Step 3 — Generate answer
         try:
             response = await self.chain.ainvoke({
                 "context": context,
                 "question": question,
             })
 
-            # Deduplicate sources
-            seen_urls = set()
+            seen_urls: set[str] = set()
             sources = []
             for chunk in chunks:
                 if chunk["url"] not in seen_urls:
@@ -123,6 +113,7 @@ class RAGAgent:
                 "answer": response.content,
                 "sources": sources,
                 "has_context": True,
+                "chunks": chunks,
             }
 
         except Exception as e:
@@ -134,4 +125,5 @@ class RAGAgent:
                 ),
                 "sources": [],
                 "has_context": False,
+                "chunks": [],
             }
