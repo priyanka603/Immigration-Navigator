@@ -10,15 +10,14 @@ from app.db.database import get_db
 from app.db.models.conversation import Conversation, Session
 from app.graph.state import NavigatorState
 from app.graph.workflow import navigator_graph
-from app.rag.retriever import retriever
 from app.schemas.chat import (
+    AgentType,
     ChatRequest,
     ChatResponse,
-    AgentType,
-    Source,
     ChecklistRequest,
     ChecklistResponse,
     ChecklistStep,
+    Source,
 )
 
 router = APIRouter(prefix="/chat", tags=["chat"])
@@ -30,13 +29,6 @@ logger = get_logger(__name__)
     response_model=ChatResponse,
     status_code=status.HTTP_200_OK,
     summary="Ask an immigration question",
-    description="""
-    Ask any question about Irish immigration.
-    The system automatically routes to the most appropriate agent:
-    - Factual questions → RAG agent (searches official documents)
-    - How-to / steps questions → Checklist agent
-    - Document/letter questions → Document agent
-    """,
 )
 async def chat(
     request: ChatRequest,
@@ -50,17 +42,14 @@ async def chat(
     )
     log.info("chat_request_received")
 
-    # Ensure session exists
     await _upsert_session(db, session_id, request)
 
-    # Build initial state
     initial_state = NavigatorState(
         question=request.message,
         nationality=request.nationality,
         current_visa=request.current_visa,
     )
 
-    # Run the graph
     try:
         result = await navigator_graph.ainvoke(initial_state)
     except Exception as e:
@@ -68,7 +57,7 @@ async def chat(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to process your question. Please try again.",
-        )
+        ) from e
 
     answer = result.get("answer", "")
     agent_used = result.get("agent_used", "rag")
@@ -84,7 +73,6 @@ async def chat(
         for s in raw_sources
     ]
 
-    # Save conversation to DB
     await _save_message(db, session_id, "user", request.message)
     await _save_message(
         db, session_id, "assistant", answer,
@@ -138,7 +126,7 @@ async def generate_checklist(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to generate checklist. Please try again.",
-        )
+        ) from e
 
     raw_steps = result.get("checklist_steps", [])
     steps = [

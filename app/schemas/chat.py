@@ -1,6 +1,4 @@
-from datetime import datetime
 from enum import StrEnum
-from uuid import UUID
 
 from pydantic import BaseModel, Field
 
@@ -36,20 +34,9 @@ class ChatRequest(BaseModel):
         description="User's immigration question",
         examples=["How do I apply for a Critical Skills Employment Permit?"],
     )
-    session_id: str | None = Field(
-        None,
-        description="Session ID for conversation continuity",
-    )
-    nationality: str | None = Field(
-        None,
-        description="User's nationality for personalised answers",
-        examples=["Indian", "Brazilian", "Chinese"],
-    )
-    current_visa: str | None = Field(
-        None,
-        description="User's current visa status if in Ireland",
-        examples=["Student Stamp 2", "Critical Skills EP", "None"],
-    )
+    session_id: str | None = Field(None)
+    nationality: str | None = Field(None, examples=["Indian"])
+    current_visa: str | None = Field(None, examples=["Student Stamp 2"])
 
 
 class ChatResponse(BaseModel):
@@ -68,21 +55,9 @@ class ChatResponse(BaseModel):
 
 
 class ChecklistRequest(BaseModel):
-    goal: str = Field(
-        ...,
-        description="What the user wants to achieve",
-        examples=["Apply for Critical Skills Employment Permit"],
-    )
-    nationality: str = Field(
-        ...,
-        description="User's nationality",
-        examples=["Indian"],
-    )
-    current_status: str = Field(
-        ...,
-        description="Current immigration status in Ireland",
-        examples=["Student Stamp 2", "Not in Ireland yet"],
-    )
+    goal: str = Field(..., examples=["Apply for Critical Skills Employment Permit"])
+    nationality: str = Field(..., examples=["Indian"])
+    current_status: str = Field(..., examples=["Student Stamp 2"])
 
 
 class ChecklistStep(BaseModel):
@@ -109,3 +84,19 @@ class ChecklistResponse(BaseModel):
         "available information. Always verify with official sources before "
         "submitting any application."
     )
+
+
+class RiskScoreRequest(BaseModel):
+    payment_id: str
+    amount: int
+    currency: str
+    customer_id: str | None = None
+    metadata: dict[str, str] | None = None
+
+
+class RiskScoreResponse(BaseModel):
+    payment_id: str
+    risk_score: float = Field(..., ge=0.0, le=1.0)
+    risk_level: str
+    flags: list[str]
+    recommendation: str

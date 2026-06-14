@@ -6,11 +6,11 @@ import structlog
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.routes import chat, health
 from app.core.config import get_settings
 from app.core.logging import configure_logging, get_logger
 from app.db.database import Base, engine
 from app.db.models import conversation  # noqa: F401
-from app.api.routes import chat, health
 from app.rag.retriever import retriever
 
 settings = get_settings()
@@ -22,12 +22,10 @@ logger = get_logger(__name__)
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     logger.info("app_starting", environment=settings.environment)
 
-    # Create DB tables
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     logger.info("database_tables_ready")
 
-    # Load FAISS index
     loaded = retriever.load()
     if loaded:
         logger.info("knowledge_base_ready")

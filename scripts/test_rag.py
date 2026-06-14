@@ -4,9 +4,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+from app.agents.rag_agent import RAGAgent
 from app.core.logging import configure_logging
 from app.rag.retriever import retriever
-from app.agents.rag_agent import RAGAgent
 
 
 async def main():
