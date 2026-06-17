@@ -27,7 +27,7 @@ Every answer includes the official source URL so users can verify independently.
 
 ## Architecture
 
-\`\`\`mermaid
+```mermaid
 flowchart TD
     A[User question] --> B[Supervisor Agent<br/>Groq Llama3 — routes to right specialist]
     B --> C[RAG Agent<br/>Factual questions]
@@ -37,7 +37,7 @@ flowchart TD
     D --> F
     E --> F
     F --> G[Grounded answer with source citations]
-\`\`\`
+```
 
 
 **Why LangGraph:** State is typed and managed. Adding a new agent is adding a new node. Conditional edges make routing explicit and testable. Built-in async support.
@@ -183,7 +183,7 @@ Pages are saved locally and ingested into a FAISS vector index. The index contai
 
 ## Project structure
 
-\`\`\`
+```
 immigration-navigator/
 ├── app/
 │   ├── agents/
@@ -205,7 +205,7 @@ immigration-navigator/
 ├── data/                       # Raw HTML sources + FAISS index
 ├── scripts/                    # Ingestion script
 └── tests/
-\`\`\`
+```
 
 ## Disclaimer
 
