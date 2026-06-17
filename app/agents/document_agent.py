@@ -98,10 +98,19 @@ class DocumentAgent:
             )
 
         except Exception as e:
-            logger.error("document_agent_failed", error=str(e))
-            state.answer = (
-                "I encountered an error explaining this document. "
-                "Please try again or contact Citizens Information directly."
-            )
+            error_str = str(e)
+            logger.error("document_agent_failed", error=error_str)
+
+            if "429" in error_str or "rate_limit" in error_str.lower():
+                state.answer = (
+                    "I'm receiving a lot of requests right now and hit a "
+                    "temporary rate limit. Please wait about a minute and "
+                    "try again."
+                )
+            else:
+                state.answer = (
+                    "I encountered an error explaining this document. "
+                    "Please try again or contact Citizens Information directly."
+                )
 
         return state

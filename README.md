@@ -27,34 +27,18 @@ Every answer includes the official source URL so users can verify independently.
 
 ## Architecture
 
+\`\`\`mermaid
+flowchart TD
+    A[User question] --> B[Supervisor Agent<br/>Groq Llama3 — routes to right specialist]
+    B --> C[RAG Agent<br/>Factual questions]
+    B --> D[Checklist Agent<br/>Step-by-step action plans]
+    B --> E[Document Agent<br/>Explains forms and letters]
+    C --> F[FAISS vector search<br/>16 official Irish government pages]
+    D --> F
+    E --> F
+    F --> G[Grounded answer with source citations]
+\`\`\`
 
-User question
-
-↓
-
-Supervisor Agent  (Groq Llama3 — routes to right specialist)
-
-↓
-
-┌─────────────┬──────────────┬──────────────────┐
-
-│  RAG Agent  │  Checklist   │  Document Agent  │
-
-│             │    Agent     │                  │
-
-│ Factual     │ Step-by-step │ Explains forms   │
-
-│ questions   │ action plans │ and letters      │
-
-└─────────────┴──────────────┴──────────────────┘
-
-↓
-
-FAISS vector search over 16 official Irish government pages
-
-↓
-
-Grounded answer with source citations
 
 **Why LangGraph:** State is typed and managed. Adding a new agent is adding a new node. Conditional edges make routing explicit and testable. Built-in async support.
 
@@ -199,58 +183,29 @@ Pages are saved locally and ingested into a FAISS vector index. The index contai
 
 ## Project structure
 
-
+\`\`\`
 immigration-navigator/
-
 ├── app/
-
 │   ├── agents/
-
-│   │   ├── supervisor.py      # Routes questions to right agent
-
-│   │   ├── rag_agent.py       # Answers factual questions from docs
-
-│   │   ├── checklist_agent.py # Generates step-by-step plans
-
-│   │   └── document_agent.py  # Explains letters and forms
-
+│   │   ├── supervisor.py       # Routes questions to right agent
+│   │   ├── rag_agent.py        # Answers factual questions from docs
+│   │   ├── checklist_agent.py  # Generates step-by-step plans
+│   │   └── document_agent.py   # Explains letters and forms
 │   ├── graph/
-
-│   │   ├── state.py           # LangGraph shared state
-
-│   │   └── workflow.py        # Agent graph definition
-
+│   │   ├── state.py            # LangGraph shared state
+│   │   └── workflow.py         # Agent graph definition
 │   ├── rag/
-
-│   │   ├── sources.py         # Government URLs and filenames
-
-│   │   ├── ingestion.py       # Build FAISS index from HTML files
-
-│   │   └── retriever.py       # Search the FAISS index
-
-│   ├── api/routes/            # FastAPI endpoints
-
-│   ├── schemas/               # Pydantic request/response models
-
-│   ├── db/                    # PostgreSQL models
-
-│   └── core/                  # Config, logging
-
-├── data/
-
-│   ├── raw_html/              # Saved government pages
-
-│   └── faiss_index/           # Vector index (gitignored)
-
-├── scripts/
-
-│   ├── ingest.py              # Build knowledge base
-
-│   └── test_graph.py          # Test multi-agent workflow
-
+│   │   ├── sources.py          # Government URLs and filenames
+│   │   ├── ingestion.py        # Build FAISS index from HTML files
+│   │   └── retriever.py        # Search the FAISS index
+│   ├── api/routes/             # FastAPI endpoints
+│   ├── schemas/                # Pydantic request/response models
+│   └── db/                     # PostgreSQL models
+├── frontend/                   # React + Tailwind UI
+├── data/                       # Raw HTML sources + FAISS index
+├── scripts/                    # Ingestion script
 └── tests/
-
----
+\`\`\`
 
 ## Disclaimer
 

@@ -178,11 +178,20 @@ class ChecklistAgent:
             )
 
         except Exception as e:
-            logger.error("checklist_agent_failed", error=str(e))
-            state.answer = (
-                "I encountered an error generating the checklist. "
-                "Please try again or visit irishimmigration.ie directly."
-            )
+            error_str = str(e)
+            logger.error("checklist_agent_failed", error=error_str)
+
+            if "429" in error_str or "rate_limit" in error_str.lower():
+                state.answer = (
+                    "I'm receiving a lot of requests right now and hit a "
+                    "temporary rate limit. Please wait about a minute and "
+                    "try again."
+                )
+            else:
+                state.answer = (
+                    "I encountered an error generating the checklist. "
+                    "Please try again or visit irishimmigration.ie directly."
+                )
             state.checklist_steps = []
             state.sources = []
 

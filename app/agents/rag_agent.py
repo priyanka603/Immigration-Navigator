@@ -144,12 +144,23 @@ class RAGAgent:
             }
 
         except Exception as e:
-            log.error("rag_agent_failed", error=str(e))
-            return {
-                "answer": (
+            error_str = str(e)
+            log.error("rag_agent_failed", error=error_str)
+
+            if "429" in error_str or "rate_limit" in error_str.lower():
+                fallback_answer = (
+                    "I'm receiving a lot of requests right now and hit a "
+                    "temporary rate limit. Please wait about a minute and "
+                    "try again."
+                )
+            else:
+                fallback_answer = (
                     "I encountered an error generating a response. "
                     "Please try again or visit irishimmigration.ie directly."
-                ),
+                )
+
+            return {
+                "answer": fallback_answer,
                 "sources": [],
                 "has_context": False,
                 "chunks": [],
