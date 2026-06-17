@@ -3,7 +3,6 @@ RAG Agent — answers immigration questions grounded in official sources.
 """
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_groq import ChatGroq
-from pydantic import SecretStr
 
 from app.core.config import get_settings
 from app.core.logging import get_logger
@@ -29,9 +28,11 @@ RAG_PROMPT = ChatPromptTemplate.from_messages([
         "- Never say 'According to Source 1' or 'According to Source 2' — "
         "just answer directly\n"
         "- End with a one-line note if the user should verify directly\n\n"
-        "- Always add a blank line before any note or disclaimer at the end\n"
         "CONTENT RULES:\n"
         "- Only use information from the provided context\n"
+        "- If the user has provided their nationality and current visa status, "
+        "use that information to give a specific, personalised answer rather "
+        "than a generic one covering all cases\n"
         "- If context does not contain enough information, say so clearly\n"
         "- For questions about CURRENT processing times: always direct the user to "
         "check the official page as times change weekly\n\n"
@@ -40,10 +41,14 @@ RAG_PROMPT = ChatPromptTemplate.from_messages([
     ),
     (
         "human",
+        "User's nationality: {nationality}\n"
+        "User's current visa/status: {current_visa}\n\n"
         "Context from official Irish government sources:\n\n"
         "{context}\n\n"
         "Question: {question}\n\n"
-        "Answer clearly and concisely using the formatting rules above.",
+        "Answer clearly and concisely using the formatting rules above. "
+        "If nationality or visa status is provided above (not 'Not specified'), "
+        "tailor the answer specifically to that situation.",
     ),
 ])
 
@@ -52,20 +57,30 @@ class RAGAgent:
     def __init__(self) -> None:
         self.llm = ChatGroq(
             model=settings.groq_model,
-            api_key=SecretStr(settings.groq_key) if settings.groq_key is not None else None,
+            api_key=settings.groq_key, # type: ignore
             temperature=0.1,
         )
         self.chain = RAG_PROMPT | self.llm
 
     async def answer_from_state(self, state: NavigatorState) -> NavigatorState:
         """Called by LangGraph — reads question from state, writes answer to state."""
-        result = await self.answer(state.question)
+        result = await self.answer(
+            state.question,
+            nationality=state.nationality,
+            current_visa=state.current_visa,
+        )
         state.answer = result["answer"]
         state.sources = result["sources"]
         state.retrieved_chunks = result.get("chunks", [])
         return state
 
-    async def answer(self, question: str, top_k: int = 5) -> dict:
+    async def answer(
+        self,
+        question: str,
+        top_k: int = 5,
+        nationality: str | None = None,
+        current_visa: str | None = None,
+    ) -> dict:
         """Direct call — used for testing outside the graph."""
         log = logger.bind(question=question[:80])
         log.info("rag_agent_called")
@@ -99,6 +114,8 @@ class RAGAgent:
             response = await self.chain.ainvoke({
                 "context": context,
                 "question": question,
+                "nationality": nationality or "Not specified",
+                "current_visa": current_visa or "Not specified",
             })
 
             seen_urls: set[str] = set()
