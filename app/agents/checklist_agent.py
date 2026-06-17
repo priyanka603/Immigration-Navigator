@@ -27,6 +27,10 @@ CHECKLIST_PROMPT = ChatPromptTemplate.from_messages([
         "You are an expert Irish immigration assistant. "
         "Generate a detailed step-by-step checklist based on the official "
         "context provided.\n\n"
+        "If nationality or current_status says 'Extract from goal if mentioned', "
+        "extract that information from the goal text itself. "
+        "If it cannot be extracted, use 'Non-EEA national' for nationality and "
+        "'Not specified' for current status.\n\n"
         "Return a JSON object with this exact structure:\n"
         "{{\n"
         '  "steps": [\n'
@@ -65,7 +69,7 @@ class ChecklistAgent:
     def __init__(self) -> None:
         self.llm = ChatGroq(
             model=settings.groq_model,
-            api_key=settings.groq_key,
+            api_key=settings.groq_key, # type: ignore
             temperature=0.1,
         )
         self.chain = CHECKLIST_PROMPT | self.llm

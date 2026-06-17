@@ -5,6 +5,7 @@ import DocumentTab from './components/DocumentTab'
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('chat')
+  const [pendingChecklist, setPendingChecklist] = useState(null)
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -34,6 +35,9 @@ export default function App() {
                 }`}
               >
                 {tab.label}
+                {tab.id === 'checklist' && pendingChecklist && (
+                  <span className="ml-1.5 w-2 h-2 rounded-full bg-primary inline-block animate-pulse" />
+                )}
               </button>
             ))}
           </nav>
@@ -46,8 +50,20 @@ export default function App() {
       </header>
 
       <main className="flex-1 overflow-hidden">
-        {activeTab === 'chat' && <ChatTab />}
-        {activeTab === 'checklist' && <ChecklistTab />}
+        {activeTab === 'chat' && (
+          <ChatTab
+            onChecklistReady={(goal, nationality, currentVisa) => {
+              setPendingChecklist({ goal, nationality, currentVisa })
+            }}
+            onGoToChecklist={() => setActiveTab('checklist')}
+          />
+        )}
+        {activeTab === 'checklist' && (
+          <ChecklistTab
+            pendingChecklist={pendingChecklist}
+            onChecklistConsumed={() => setPendingChecklist(null)}
+          />
+        )}
         {activeTab === 'document' && <DocumentTab />}
       </main>
     </div>

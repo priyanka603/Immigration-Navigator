@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
-export default function ChecklistTab() {
+export default function ChecklistTab({ pendingChecklist, onChecklistConsumed }) {
   const [goal, setGoal] = useState('')
   const [nationality, setNationality] = useState('')
   const [currentStatus, setCurrentStatus] = useState('')
@@ -8,8 +8,24 @@ export default function ChecklistTab() {
   const [result, setResult] = useState(null)
   const [error, setError] = useState(null)
 
-  const generateChecklist = async () => {
-    if (!goal.trim() || !nationality.trim() || !currentStatus.trim()) return
+
+  useEffect(() => {
+    if (!pendingChecklist) return
+
+    const { goal: g, nationality: n, currentVisa: v } = pendingChecklist
+
+    setGoal(g)
+    setNationality(n || '')
+    setCurrentStatus(v || '')
+    setResult(null)
+    setError(null)
+
+    onChecklistConsumed()
+    autoGenerate(g, n || '', v || '')
+  }, [pendingChecklist?.goal])
+
+  const autoGenerate = async (goalVal, nationalityVal, statusVal) => {
+    if (!goalVal.trim()) return
     setIsLoading(true)
     setError(null)
     setResult(null)
@@ -19,18 +35,23 @@ export default function ChecklistTab() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          goal,
-          nationality,
-          current_status: currentStatus,
+          goal: goalVal,
+          nationality: nationalityVal || 'Extract from goal if mentioned',
+          current_status: statusVal || 'Extract from goal if mentioned',
         }),
       })
       const data = await res.json()
       setResult(data)
     } catch {
-      setError('Could not connect to the server. Please make sure the backend is running.')
+      setError('Could not connect to the server.')
     } finally {
       setIsLoading(false)
     }
+  }
+
+  const generateChecklist = async () => {
+    if (!goal.trim() || !nationality.trim() || !currentStatus.trim()) return
+    await autoGenerate(goal, nationality, currentStatus)
   }
 
   return (
@@ -133,7 +154,9 @@ export default function ChecklistTab() {
         {isLoading && (
           <div className="flex flex-col items-center justify-center h-full">
             <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mb-4" />
-            <p className="text-text-secondary text-sm">Searching official sources and building your plan...</p>
+            <p className="text-text-secondary text-sm">
+              Searching official sources and building your plan...
+            </p>
           </div>
         )}
 
@@ -236,7 +259,9 @@ export default function ChecklistTab() {
 
             {result.sources && result.sources.length > 0 && (
               <div className="mt-4">
-                <p className="text-xs text-text-secondary mb-2 font-medium uppercase tracking-wide">Sources</p>
+                <p className="text-xs text-text-secondary mb-2 font-medium uppercase tracking-wide">
+                  Sources
+                </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {result.sources.map((source, i) => {
                     return (

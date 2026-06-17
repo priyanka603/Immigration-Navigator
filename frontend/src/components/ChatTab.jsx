@@ -11,7 +11,7 @@ const SUGGESTED_QUESTIONS = [
   "What is the difference between Stamp 1 and Stamp 4?",
 ]
 
-export default function ChatTab() {
+export default function ChatTab({ onChecklistReady, onGoToChecklist }) {
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -48,12 +48,27 @@ export default function ChatTab() {
       const data = await res.json()
       if (!sessionId) setSessionId(data.session_id)
 
-      setMessages(prev => [...prev, {
-        role: 'assistant',
-        content: data.answer,
-        sources: data.sources,
-        agent_used: data.agent_used,
-      }])
+      if (data.agent_used === 'checklist') {
+        const extractedNationality = nationality || ''
+        const extractedVisa = currentVisa || ''
+        console.log('Passing to checklist:', { messageText, extractedNationality, extractedVisa })
+        onChecklistReady(messageText, extractedNationality, extractedVisa)
+        setMessages(prev => [...prev, {
+          role: 'assistant',
+          content: `I've prepared a personalised checklist for you. Head to the **✅ Get a checklist** tab to see your step-by-step plan.`,
+          sources: [],
+          agent_used: 'checklist',
+          isChecklistRedirect: true,
+        }])
+        
+      } else {
+        setMessages(prev => [...prev, {
+          role: 'assistant',
+          content: data.answer,
+          sources: data.sources,
+          agent_used: data.agent_used,
+        }])
+      }
     } catch {
       setMessages(prev => [...prev, {
         role: 'assistant',
@@ -75,8 +90,6 @@ export default function ChatTab() {
 
   return (
     <div className="flex h-full" style={{ height: 'calc(100vh - 56px)' }}>
-
-      {/* Left sidebar */}
       <div className="w-72 border-r border-border bg-surface flex flex-col flex-shrink-0">
         <div className="p-4 border-b border-border">
           <p className="text-xs font-medium text-text-secondary uppercase tracking-wide mb-3">
@@ -100,7 +113,7 @@ export default function ChatTab() {
           </div>
         </div>
 
-        <div className="p-4 flex-1 overflow-y-auto">
+        <div className="p-4 flex-1 overflow-y-auto chat-scrollbar">
           <p className="text-xs font-medium text-text-secondary uppercase tracking-wide mb-3">
             Suggested questions
           </p>
@@ -125,8 +138,7 @@ export default function ChatTab() {
         </div>
       </div>
 
-      {/* Main chat */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 bg-surface">
         <div className="flex-1 overflow-y-auto chat-scrollbar p-6 space-y-5">
           {messages.length === 0 && (
             <div className="flex flex-col items-center justify-center h-full text-center fade-in">
@@ -142,7 +154,11 @@ export default function ChatTab() {
           )}
 
           {messages.map((msg, i) => (
-            <MessageBubble key={i} message={msg} />
+            <MessageBubble
+              key={i}
+              message={msg}
+              onGoToChecklist={onGoToChecklist}
+            />
           ))}
 
           {isLoading && <TypingIndicator />}
@@ -172,7 +188,6 @@ export default function ChatTab() {
         </div>
       </div>
 
-      {/* Right panel */}
       <div className="w-72 border-l border-border bg-surface flex-shrink-0 overflow-y-auto">
         <div className="p-4 border-b border-border">
           <p className="text-xs font-medium text-text-secondary uppercase tracking-wide">

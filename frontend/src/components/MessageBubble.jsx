@@ -1,6 +1,6 @@
 import ReactMarkdown from 'react-markdown'
 
-export default function MessageBubble({ message }) {
+export default function MessageBubble({ message, onGoToChecklist }) {
   const isUser = message.role === 'user'
 
   return (
@@ -73,6 +73,15 @@ export default function MessageBubble({ message }) {
             >
               {message.content}
             </ReactMarkdown>
+          )}
+
+          {message.isChecklistRedirect && onGoToChecklist && (
+            <button
+              onClick={onGoToChecklist}
+              className="mt-3 flex items-center gap-2 bg-primary text-background px-4 py-2 rounded-xl text-xs font-semibold hover:bg-primary-dark transition-colors"
+            >
+              ✅ Go to checklist tab →
+            </button>
           )}
         </div>
       </div>
