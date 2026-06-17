@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import ChatTab from './components/ChatTab'
 import ChecklistTab from './components/ChecklistTab'
+import DocumentTab from './components/DocumentTab'
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('chat')
@@ -21,6 +22,7 @@ export default function App() {
             {[
               { id: 'chat', label: '💬 Ask a question' },
               { id: 'checklist', label: '✅ Get a checklist' },
+              { id: 'document', label: '📄 Explain a document' },
             ].map(tab => (
               <button
                 key={tab.id}
@@ -44,7 +46,9 @@ export default function App() {
       </header>
 
       <main className="flex-1 overflow-hidden">
-        {activeTab === 'chat' ? <ChatTab /> : <ChecklistTab />}
+        {activeTab === 'chat' && <ChatTab />}
+        {activeTab === 'checklist' && <ChecklistTab />}
+        {activeTab === 'document' && <DocumentTab />}
       </main>
     </div>
   )
