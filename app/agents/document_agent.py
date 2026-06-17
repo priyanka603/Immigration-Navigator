@@ -7,6 +7,7 @@ a form, this agent explains what it means and what action is needed.
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_groq import ChatGroq
 
+from pydantic import SecretStr
 from app.core.config import get_settings
 from app.core.logging import get_logger
 from app.graph.state import NavigatorState
@@ -20,21 +21,24 @@ DOCUMENT_PROMPT = ChatPromptTemplate.from_messages([
         "system",
         "You are an expert Irish immigration assistant. "
         "Explain immigration documents, letters, and forms in plain English.\n\n"
-        "When explaining a document or answering a document-related question:\n"
-        "1. Explain what the document/situation means in simple terms\n"
-        "2. State clearly what action the person needs to take\n"
-        "3. Give any relevant deadlines or time limits\n"
-        "4. Point to the official source for more information\n\n"
-        "Use the provided context from official sources. "
-        "Be clear, calm, and reassuring — immigration letters can be stressful.",
+        "FORMATTING RULES:\n"
+        "- Start with a short summary of what the document/situation means\n"
+        "- Use **bold** for important actions, deadlines, and key terms\n"
+        "- Use bullet points for action steps\n"
+        "- Never include source URLs inline\n"
+        "- Never say 'According to Source X'\n\n"
+        "When explaining a document:\n"
+        "1. What it means — in one or two plain English sentences\n"
+        "2. What action the person needs to take — as bullet points\n"
+        "3. Any deadlines or time limits — in bold\n"
+        "4. Where to go for more information — official site name only, no URL",
     ),
     (
         "human",
         "Context from official Irish government sources:\n\n"
         "{context}\n\n"
         "Question or document to explain: {question}\n\n"
-        "Please explain in plain English what this means and what action "
-        "the person should take.",
+        "Explain clearly using the formatting rules above.",
     ),
 ])
 
@@ -43,7 +47,7 @@ class DocumentAgent:
     def __init__(self) -> None:
         self.llm = ChatGroq(
             model=settings.groq_model,
-            api_key=settings.groq_key,
+            api_key=SecretStr(settings.groq_key) if settings.groq_key is not None else None,
             temperature=0.1,
         )
         self.chain = DOCUMENT_PROMPT | self.llm
@@ -70,7 +74,13 @@ class DocumentAgent:
                 "question": state.question,
             })
 
-            state.answer = response.content
+            # Ensure state.answer is a string. Some LLM responses may be
+            # returned as lists or other structures; coerce to str if needed.
+            state.answer = (
+                response.content
+                if isinstance(response.content, str)
+                else str(response.content)
+            )
 
             seen_urls: set[str] = set()
             sources = []

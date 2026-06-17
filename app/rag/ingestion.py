@@ -101,7 +101,19 @@ def build_index() -> None:
     logger.info("ingestion_started", num_sources=len(IMMIGRATION_SOURCES))
 
     model = SentenceTransformer(settings.embedding_model)
-    embedding_dim = model.get_embedding_dimension()
+    # sentence_transformers provides get_sentence_embedding_dimension()
+    # older/other APIs might use get_embedding_dimension(); handle both
+    embedding_dim = None
+    if hasattr(model, "get_sentence_embedding_dimension"):
+        embedding_dim = model.get_sentence_embedding_dimension()
+    elif hasattr(model, "get_embedding_dimension"):
+        embedding_dim = model.get_embedding_dimension()
+
+    if embedding_dim is None:
+        logger.error("unknown_embedding_dimension")
+        return
+
+    embedding_dim = int(embedding_dim)
 
     index = faiss.IndexFlatL2(embedding_dim)
     metadata = []

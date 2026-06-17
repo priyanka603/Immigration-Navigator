@@ -1,3 +1,5 @@
+import ReactMarkdown from 'react-markdown'
+
 export default function MessageBubble({ message }) {
   const isUser = message.role === 'user'
 
@@ -23,7 +25,55 @@ export default function MessageBubble({ message }) {
               : 'bg-surface border border-border text-text-primary rounded-tl-sm'
           }`}
         >
-          {message.content}
+          {isUser ? (
+            message.content
+          ) : (
+            <ReactMarkdown
+              components={{
+                p: ({ children }) => (
+                  <p className="mb-2 last:mb-0">{children}</p>
+                ),
+                ul: ({ children }) => (
+                  <ul className="mb-2 space-y-1 list-none">{children}</ul>
+                ),
+                li: ({ children }) => (
+                  <li className="flex gap-2">
+                    <span className="text-primary flex-shrink-0 mt-0.5">•</span>
+                    <span>{children}</span>
+                  </li>
+                ),
+                strong: ({ children }) => (
+                  <strong className="font-semibold text-text-primary">
+                    {children}
+                  </strong>
+                ),
+                h3: ({ children }) => (
+                  <h3 className="font-semibold text-text-primary mb-1 mt-3 first:mt-0">
+                    {children}
+                  </h3>
+                ),
+                table: ({ children }) => (
+                  <div className="overflow-x-auto my-2">
+                    <table className="text-xs w-full border-collapse">
+                      {children}
+                    </table>
+                  </div>
+                ),
+                th: ({ children }) => (
+                  <th className="text-left px-3 py-2 bg-surface-2 border border-border font-medium text-text-primary">
+                    {children}
+                  </th>
+                ),
+                td: ({ children }) => (
+                  <td className="px-3 py-2 border border-border text-text-secondary">
+                    {children}
+                  </td>
+                ),
+              }}
+            >
+              {message.content}
+            </ReactMarkdown>
+          )}
         </div>
       </div>
     </div>
