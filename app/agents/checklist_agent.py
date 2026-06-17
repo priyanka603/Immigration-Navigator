@@ -12,7 +12,6 @@ import json
 
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_groq import ChatGroq
-from pydantic import SecretStr
 
 from app.core.config import get_settings
 from app.core.logging import get_logger
@@ -66,7 +65,7 @@ class ChecklistAgent:
     def __init__(self) -> None:
         self.llm = ChatGroq(
             model=settings.groq_model,
-            api_key=SecretStr(settings.groq_key) if settings.groq_key is not None else None,
+            api_key=settings.groq_key,
             temperature=0.1,
         )
         self.chain = CHECKLIST_PROMPT | self.llm

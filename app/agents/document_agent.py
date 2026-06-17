@@ -8,7 +8,6 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_groq import ChatGroq
 
 from app.core.config import get_settings
-from pydantic import SecretStr
 from app.core.logging import get_logger
 from app.graph.state import NavigatorState
 from app.rag.retriever import retriever
@@ -47,7 +46,7 @@ class DocumentAgent:
     def __init__(self) -> None:
         self.llm = ChatGroq(
             model=settings.groq_model,
-            api_key=SecretStr(settings.groq_key) if settings.groq_key is not None else None,
+            api_key=settings.groq_key, # type: ignore
             temperature=0.1,
         )
         self.chain = DOCUMENT_PROMPT | self.llm
