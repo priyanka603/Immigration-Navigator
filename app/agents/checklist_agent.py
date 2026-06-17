@@ -12,8 +12,8 @@ import json
 
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_groq import ChatGroq
-
 from pydantic import SecretStr
+
 from app.core.config import get_settings
 from app.core.logging import get_logger
 from app.graph.state import NavigatorState
@@ -66,9 +66,7 @@ class ChecklistAgent:
     def __init__(self) -> None:
         self.llm = ChatGroq(
             model=settings.groq_model,
-            api_key=(settings.groq_key
-                     if isinstance(settings.groq_key, SecretStr)
-                     else SecretStr(settings.groq_key)),
+            api_key=SecretStr(settings.groq_key) if settings.groq_key is not None else None,
             temperature=0.1,
         )
         self.chain = CHECKLIST_PROMPT | self.llm
@@ -110,7 +108,6 @@ class ChecklistAgent:
                 "current_status": current_status,
             })
 
-            # response.content can be a string or a list of strings/dicts depending on the LLM wrapper
             content = response.content
             if isinstance(content, list):
                 parts = []
@@ -118,8 +115,11 @@ class ChecklistAgent:
                     if isinstance(item, str):
                         parts.append(item)
                     elif isinstance(item, dict):
-                        # try common keys
-                        parts.append(item.get("content") or item.get("text") or json.dumps(item))
+                        parts.append(
+                            item.get("content")
+                            or item.get("text")
+                            or json.dumps(item)
+                        )
                     else:
                         parts.append(str(item))
                 raw = "\n".join(parts).strip()
@@ -127,28 +127,34 @@ class ChecklistAgent:
                 raw = str(content).strip()
 
             if raw.startswith("```"):
-                raw = raw.split("```")[1]
-                if raw.startswith("json"):
-                    raw = raw[4:]
-                raw = raw.strip()
+                parts = raw.split("```")
+                if len(parts) >= 2:
+                    raw = parts[1]
+                    if raw.startswith("json"):
+                        raw = raw[4:]
+                    raw = raw.strip()
 
-            parsed = json.loads(raw)
-            state.checklist_steps = parsed.get("steps", [])
-
-            summary_parts = []
-            if parsed.get("total_estimated_time"):
-                summary_parts.append(
-                    f"Total time: {parsed['total_estimated_time']}"
+            checklist_steps: list[dict] = []
+            try:
+                parsed = json.loads(raw)
+                if isinstance(parsed, dict):
+                    checklist_steps = parsed.get("steps", []) or []
+                elif isinstance(parsed, list):
+                    checklist_steps = parsed
+                else:
+                    checklist_steps = []
+            except json.JSONDecodeError:
+                logger.warning(
+                    "checklist_response_json_parse_failed",
+                    raw=raw[:500],
                 )
-            if parsed.get("total_estimated_cost"):
-                summary_parts.append(
-                    f"Total cost: {parsed['total_estimated_cost']}"
-                )
-            notes = parsed.get("important_notes", [])
-            if notes:
-                summary_parts.append("Important notes: " + "; ".join(notes))
+                checklist_steps = []
 
-            state.answer = "\n".join(summary_parts)
+            if not isinstance(checklist_steps, list):
+                checklist_steps = []
+
+            state.checklist_steps = checklist_steps
+            state.answer = raw
 
             seen_urls: set[str] = set()
             sources = []
@@ -166,14 +172,15 @@ class ChecklistAgent:
             logger.info(
                 "checklist_generated",
                 num_steps=len(state.checklist_steps),
-                goal=goal[:80],
             )
 
         except Exception as e:
             logger.error("checklist_agent_failed", error=str(e))
             state.answer = (
                 "I encountered an error generating the checklist. "
-                "Please try rephrasing your question."
+                "Please try again or visit irishimmigration.ie directly."
             )
+            state.checklist_steps = []
+            state.sources = []
 
         return state

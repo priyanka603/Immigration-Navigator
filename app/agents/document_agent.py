@@ -7,8 +7,8 @@ a form, this agent explains what it means and what action is needed.
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_groq import ChatGroq
 
-from pydantic import SecretStr
 from app.core.config import get_settings
+from pydantic import SecretStr
 from app.core.logging import get_logger
 from app.graph.state import NavigatorState
 from app.rag.retriever import retriever
@@ -56,7 +56,7 @@ class DocumentAgent:
         """Explain an immigration document or letter."""
         logger.info("document_agent_called", question=state.question[:80])
 
-        chunks = retriever.search(state.question, top_k=5)
+        chunks = await retriever.search_async(state.question, top_k=5)
 
         context_parts = []
         for i, chunk in enumerate(chunks, 1):
@@ -74,8 +74,6 @@ class DocumentAgent:
                 "question": state.question,
             })
 
-            # Ensure state.answer is a string. Some LLM responses may be
-            # returned as lists or other structures; coerce to str if needed.
             state.answer = (
                 response.content
                 if isinstance(response.content, str)
