@@ -33,7 +33,7 @@ flowchart TD
     B --> C[RAG Agent<br/>Factual questions]
     B --> D[Checklist Agent<br/>Step-by-step action plans]
     B --> E[Document Agent<br/>Explains forms and letters]
-    C --> F[FAISS vector search<br/>16 official Irish government pages]
+    C --> F[FAISS vector search<br/> official Irish government pages]
     D --> F
     E --> F
     F --> G[Grounded answer with source citations]
@@ -72,7 +72,7 @@ Every API response includes a disclaimer that the information is for guidance on
 | LLM | Groq (Llama3 70B) |
 | Embeddings | sentence-transformers/all-MiniLM-L6-v2 (local) |
 | Vector store | FAISS |
-| Knowledge base | 16 official Irish government pages |
+| Knowledge base | official Irish government pages |
 | API framework | FastAPI + Uvicorn |
 | Database | PostgreSQL 16 + SQLAlchemy async |
 | Validation | Pydantic v2 |
